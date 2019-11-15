@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minesweeper</title>
+    <link href="MinesweeperStyle.css" rel="stylesheet">
+
+
+    <script type="text/javascript" src="main.js"></script>
+
+
+</head>
+
+<body onLoad="initialise()">
+
+
+<!--basis for mapping left and right click options to the canvas in the future-->
+<button id="button" onclick="initialise()">
+    Reset
+</button>
+
+<h1>
+    Minesweeper
+</h1>
+
+
+<canvas id="myCanvas" width="495" height="495"
+        onclick="leftClick()"
+        oncontextmenu="rightClick()"
+        style="border:3px solid #000000;">
+</canvas>
+
+
+
+
+
+
+</body>
+</html>
