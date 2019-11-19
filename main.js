@@ -1,15 +1,23 @@
+
+//stores details about the current minesweeper board
 function Minesweeper(size, mines) {
     this.size = size;
     this.mines = mines;
-    this.map = MineMap(size,mines);
+    this.map;
+    this.firstClick;
 }
 
 
+// Initialisation of features
+const size = 16;
+const mines = 50;
+let userMap = [];
+let minesweeper = new Minesweeper(size,mines, true);
+const boxSize = 30;
 
-var userMap = [];
-let minesweeper = new Minesweeper(16,40);
 
 function mapInit(size) {
+    //creates a 2D array of empty squares to be filled
     let map = [];
 
     for (let i = 0; i < size; i++) {
@@ -32,7 +40,7 @@ function addNums(map) {
             count = 0;
             if (map[x][y] !== 'M') {
 
-
+                //checks surrounding squares
                 if (y > 0 && map[x][y - 1] === 'M') {
                     count++;
                 }
@@ -45,8 +53,6 @@ function addNums(map) {
                 if (x < size - 1 && map[x + 1][y] === 'M') {
                     count++;
                 }
-
-
                 if (y > 0 && x > 0 && map[x - 1][y - 1] === 'M') {
                     count++;
                 }
@@ -60,37 +66,46 @@ function addNums(map) {
                     count++;
                 }
 
-
-
-
-
-
-
                 if (count !== 0) {
                     map[x][y] = count.toString();
                 }
-
             }
-
-
         }
     }
     return map
 }
 
-function MineMap(size, mines) {
+function MineMap(size, mines, position) {
     //builds minesweeper map based on the size and number of mines
     let mineLocations = new Set([]);
-    let trueSize = size ** 2;
+    const trueSize = size ** 2;
+    let createdNum;
+
+    let safeSquares = new Set([((position[0])*size) + position[1]]);
+
+    for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+            createdNum = ((position[0]+i)*size) + position[1] + j;
+            if (createdNum >= 0 && createdNum <= ((size ** 2) - 1)) {
+                safeSquares.add(createdNum);
+            }
+        }
+    }
+
+
+    //((position[1])*size) + position[0]]
 
     //randomly assign positions to mines
     while (mineLocations.size < mines) {
-        mineLocations.add(Math.floor((Math.random() * trueSize)))
+        createdNum = Math.floor((Math.random() * trueSize));
+        if (!safeSquares.has(createdNum)) {
+            mineLocations.add(createdNum);
+        }
     }
 
     let map = mapInit(size);
-    //console.log(map);
 
+    //change from set to array
     mineLocations = Array.from(mineLocations);
 
     for (let i = 0; i < mineLocations.length; i++) {
@@ -98,22 +113,18 @@ function MineMap(size, mines) {
         let y = mineLocations[i] % size;
         map[x][y] = 'M';
     }
-
-
     return addNums(map);
 }
 
-function initialise() {
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
+
+function drawGrid() {
+    //creates an untouched minesweeper grid of correct size
+    let canvas = document.getElementById("myCanvas");
+    let ctx = canvas.getContext("2d");
     ctx.fillStyle = "#ff9634";
-    ctx.fillRect(0, 0, 495, 495);
-    let yCoord;
+    ctx.fillRect(0, 0, (((boxSize+1)*16)-1), (((boxSize+1)*16)-1));
+    let yCoord = 0;
     let xCoord;
-
-
-    let boxSize = 30;
-    yCoord = 0;
     for (let y = 0; y < 16; y++) {
         xCoord = 0;
         for (let x = 0; x < 16; x++) {
@@ -125,14 +136,18 @@ function initialise() {
 
         yCoord += boxSize + 1;
     }
-
-    minesweeper.map = MineMap(minesweeper.size, minesweeper.mines)
-    userMap = mapInit(minesweeper.size);
-
 }
 
+
+function initialise() {
+    drawGrid();
+    minesweeper.firstClick = true;
+    userMap = mapInit(minesweeper.size);
+}
+
+
 function fillGradient(ctx, x, y, boxSize) {
-    var grd;
+    let grd;
     grd = ctx.createLinearGradient(0, 0, 500, 500);
     grd.addColorStop(0, "#40fffd");
     grd.addColorStop(1, "#3A60e8");
@@ -142,18 +157,21 @@ function fillGradient(ctx, x, y, boxSize) {
 }
 
 
-
-
-
 function leftClick() {
     let x = event.pageX - document.getElementById('myCanvas').offsetLeft;
     let y = event.pageY - document.getElementById('myCanvas').offsetTop;
     let position = pixelToBox(x, y);
+    if (minesweeper.firstClick) {
+        minesweeper.map = MineMap(minesweeper.size, minesweeper.mines, position);
+        minesweeper.firstClick = false;
+    }
+
+
     if (userMap[position[1]][position[0]] === '_') {
-        userMap[position[1]][position[0]] = 'U';
         uncover(position);
     }
 }
+
 
 function rightClick() {
     event.preventDefault();
@@ -173,20 +191,23 @@ function rightClick() {
 
 
 }
+
+
 function flag(position) {
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
+    let canvas = document.getElementById("myCanvas");
+    let ctx = canvas.getContext("2d");
     ctx.font = "30px Arial";
     ctx.fillStyle = "#000000";
     ctx.fillText("F", (position[0] * 31) + 5, ((position[1] + 1) * 31) - 4);
 
 }
+
+
 function deflag(position) {
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
+    let canvas = document.getElementById("myCanvas");
+    let ctx = canvas.getContext("2d");
     fillGradient(ctx, position[0]*(31), position[1]*31, 30);
 }
-
 
 
 function pixelToBox(x, y) {
@@ -196,27 +217,49 @@ function pixelToBox(x, y) {
     return [boxX, boxY];
 }
 
+
 function uncover(position) {
 
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(position[0] * 31, position[1] * 31, 30, 30);
-    ctx.font = "30px Arial";
-    let boxStatus = minesweeper.map[position[0]][position[1]];
+    if (position[0] >= 0 && position[0] <= 15 && position[1] >= 0 && position[1] <= 15) {
+        let canvas = document.getElementById("myCanvas");
+        let ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(position[0] * 31, position[1] * 31, 30, 30);
+        ctx.font = "30px Arial";
+        let boxStatus = minesweeper.map[position[0]][position[1]];
 
 
-
-    if (boxStatus !== '_') {
-        if (boxStatus === 'M') {
-            ctx.strokeText(boxStatus, (position[0] * 31) + 1, ((position[1] + 1) * 31) - 4);
-            alert("You lose!");
-        } else {
-            ctx.strokeText(boxStatus, (position[0] * 31) + 5, ((position[1] + 1) * 31) - 4);
+        if (userMap[position[1]][position[0]] === '_' && boxStatus === '_') {
+            userMap[position[1]][position[0]] = 'U';
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    uncover([position[0] + i, position[1] + j]);
+                }
+            }
         }
+
+
+
+        userMap[position[1]][position[0]] = 'U';
+
+
+
+
+
+        if (boxStatus !== '_') {
+            if (boxStatus === 'M') {
+                ctx.strokeText(boxStatus, (position[0] * 31) + 1, ((position[1] + 1) * 31) - 4);
+                drawGrid();
+
+
+
+                alert("You lose!");
+            } else {
+                ctx.strokeText(boxStatus, (position[0] * 31) + 5, ((position[1] + 1) * 31) - 4);
+            }
+        }
+
     }
 
 
 }
-
-
